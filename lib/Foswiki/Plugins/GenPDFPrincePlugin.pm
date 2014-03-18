@@ -1,6 +1,6 @@
 # Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# Copyright (C) 2009-2013 Michael Daum http://michaeldaumconsulting.com
+# Copyright (C) 2009-2014 Michael Daum http://michaeldaumconsulting.com
 #
 # This license applies to GenPDFPrincePlugin *and also to any derivatives*
 #
@@ -23,16 +23,19 @@ use warnings;
 
 use Foswiki::Func ();
 use Foswiki::Plugins ();
+use Foswiki::Sandbox ();
 use Error qw(:try);
 use File::Path ();
 use Encode ();
+use File::Temp ();
 
-our $VERSION = '1.40';
-our $RELEASE = '1.40';
+our $VERSION = '1.50';
+our $RELEASE = '1.50';
 our $SHORTDESCRIPTION = 'Generate PDF using Prince XML';
 our $NO_PREFS_IN_TOPIC = 1;
 our $baseTopic;
 our $baseWeb;
+our $doit = 0;
 
 use constant DEBUG => 0; # toggle me
 
@@ -51,6 +54,16 @@ sub initPlugin {
     return 0;
   }
 
+  my $query = Foswiki::Func::getCgiQuery();
+  my $contenttype = $query->param("contenttype") || 'text/html';
+
+  if ($contenttype eq "application/pdf") {
+    $doit = 1;
+    Foswiki::Func::getContext()->{static} = 1;
+  } else {
+    $doit = 0;
+  }
+
   return 1;
 }
 
@@ -58,16 +71,17 @@ sub initPlugin {
 sub completePageHandler {
   #my($html, $httpHeaders) = @_;
 
-  my $query = Foswiki::Func::getCgiQuery();
-  my $contenttype = $query->param("contenttype") || 'text/html';
+  return unless $doit;
 
-  # is this a pdf view?
-  return unless $contenttype eq "application/pdf";
+  my $siteCharSet = $Foswiki::cfg{Site}{CharSet};
 
-  require File::Temp;
-  require Foswiki::Sandbox;
+  my $content = $_[0];
 
-  my $content = Encode::decode($Foswiki::cfg{Site}{CharSet}, $_[0]);
+  unless ($siteCharSet =~ /utf\-8/i) {
+    # convert to utf8
+    $content = Encode::decode($siteCharSet, $content);
+    $content = Encode::encode_utf8($content);
+  }
 
   # remove left-overs
   $content =~ s/([\t ]?)[ \t]*<\/?(nop|noautolink)\/?>/$1/gis;
@@ -79,7 +93,7 @@ sub completePageHandler {
   $content =~ s/(href=["'])\?.*(#[^"'\s])+/$1$2/g;
 
   # rewrite some urls to use file://..
-  #$content =~ s/(<link[^>]+href=["'])([^"']+)(["'])/$1.toFileUrl($2).$3/ge;
+  $content =~ s/(<link[^>]+href=["'])([^"']+)(["'])/$1.toFileUrl($2).$3/ge;
   $content =~ s/(<img[^>]+src=["'])([^"']+)(["'])/$1.toFileUrl($2).$3/ge;
 
   # create temp files
@@ -90,8 +104,6 @@ sub completePageHandler {
   my ($pdfFilePath, $pdfFile) = getFileName($baseWeb, $baseTopic);
 
   # creater html file
-  $content = Encode::encode($Foswiki::cfg{Site}{CharSet}, $content);
-
   binmode($htmlFile);
   print $htmlFile $content;
   writeDebug("htmlFile=" . $htmlFile->filename);
@@ -124,8 +136,8 @@ sub completePageHandler {
     $error = <$errorFile>;
   }
 
-  writeDebug("GenPDFPrincePlugin - error=$error");
-  writeDebug("GenPDFPrincePlugin - output=$output");
+  writeDebug("error=$error");
+  writeDebug("output=$output");
 
   if ($exit) {
     my $html = $content;
@@ -142,6 +154,7 @@ sub completePageHandler {
   #);
   my $url = $Foswiki::cfg{PubUrlPath} . '/' . $baseWeb . '/' . $baseTopic . '/' . $pdfFile . '?t=' . time();
 
+  my $query = Foswiki::Func::getCgiQuery();
   Foswiki::Func::redirectCgiQuery($query, $url);
 }
 
@@ -194,14 +207,7 @@ sub toFileUrl {
 sub modifyHeaderHandler {
   my ($hopts, $request) = @_;
 
-  my $query = Foswiki::Func::getCgiQuery();
-  my $contenttype = $query->param("contenttype") || 'text/html';
-
-  # is this a pdf view?
-  return unless $contenttype eq "application/pdf";
-
-  # add disposition
-  $hopts->{'Content-Disposition'} = "inline;filename=$baseTopic.pdf";
+  $hopts->{'Content-Disposition'} = "inline;filename=$baseTopic.pdf" if $doit;
 }
 
 1;
