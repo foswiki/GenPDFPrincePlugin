@@ -29,19 +29,19 @@ use File::Path ();
 use Encode ();
 use File::Temp ();
 
-our $VERSION = '1.50';
-our $RELEASE = '1.50';
+our $VERSION = '1.51';
+our $RELEASE = '1.51';
 our $SHORTDESCRIPTION = 'Generate PDF using Prince XML';
 our $NO_PREFS_IN_TOPIC = 1;
 our $baseTopic;
 our $baseWeb;
 our $doit = 0;
 
-use constant DEBUG => 0; # toggle me
+use constant TRACE => 0; # toggle me
 
 ###############################################################################
 sub writeDebug {
-  print STDERR "GenPDFPrincePlugin - $_[0]\n" if DEBUG;
+  print STDERR "GenPDFPrincePlugin - $_[0]\n" if TRACE;
 }
 
 ###############################################################################
@@ -97,8 +97,8 @@ sub completePageHandler {
   $content =~ s/(<img[^>]+src=["'])([^"']+)(["'])/$1.toFileUrl($2).$3/ge;
 
   # create temp files
-  my $htmlFile = new File::Temp(SUFFIX => '.html', UNLINK => (DEBUG ? 0 : 1));
-  my $errorFile = new File::Temp(SUFFIX => '.log', UNLINK => (DEBUG ? 0 : 1));
+  my $htmlFile = new File::Temp(SUFFIX => '.html', UNLINK => (TRACE ? 0 : 1));
+  my $errorFile = new File::Temp(SUFFIX => '.log', UNLINK => (TRACE ? 0 : 1));
 
   # create output filename
   my ($pdfFilePath, $pdfFile) = getFileName($baseWeb, $baseTopic);
@@ -132,7 +132,7 @@ sub completePageHandler {
   writeDebug("htmlFile=" . $htmlFile->filename);
 
   my $error = '';
-  if ($exit || DEBUG) {
+  if ($exit || TRACE) {
     $error = <$errorFile>;
   }
 
@@ -187,13 +187,6 @@ sub toFileUrl {
   if ($fileUrl =~ /^(?:$Foswiki::cfg{DefaultUrlHost})?$Foswiki::cfg{PubUrlPath}(.*)$/) {
     $fileUrl = $1;
     $fileUrl =~ s/\?.*$//;
-    if ($fileUrl =~ /^\/(.*)\/([^\/]+)\/[^\/]+$/) {
-      my $web = $1;
-      my $topic = $2;
-      my $wikiName = Foswiki::Func::getWikiName();
-      writeDebug("checking access for $wikiName on $web.$topic");
-      return '' unless Foswiki::Func::checkAccessPermission("VIEW", $wikiName, undef, $topic, $web);
-    }
     $fileUrl = "file://".$Foswiki::cfg{PubDir}.$fileUrl;
   } else {
     writeDebug("url=$url does not point to the local server");
