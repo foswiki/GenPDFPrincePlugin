@@ -29,8 +29,8 @@ use File::Path ();
 use Encode ();
 use File::Temp ();
 
-our $VERSION = '1.51';
-our $RELEASE = '1.51';
+our $VERSION = '1.60';
+our $RELEASE = '1.60';
 our $SHORTDESCRIPTION = 'Generate PDF using Prince XML';
 our $NO_PREFS_IN_TOPIC = 1;
 our $baseTopic;
