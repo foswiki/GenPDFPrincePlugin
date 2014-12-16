@@ -77,11 +77,11 @@ sub completePageHandler {
 
   my $content = $_[0];
 
-  unless ($siteCharSet =~ /utf\-8/i) {
-    # convert to utf8
-    $content = Encode::decode($siteCharSet, $content);
-    $content = Encode::encode_utf8($content);
-  }
+# unless ($siteCharSet =~ /utf\-8/i) {
+   # convert to utf8
+   $content = Encode::decode($siteCharSet, $content);
+   $content = Encode::encode_utf8($content);
+# }
 
   # remove left-overs
   $content =~ s/([\t ]?)[ \t]*<\/?(nop|noautolink)\/?>/$1/gis;
@@ -90,7 +90,7 @@ sub completePageHandler {
 
   # clean url params in anchors as prince can't generate proper xrefs otherwise;
   # hope this gets fixed in prince at some time
-  $content =~ s/(href=["'])\?.*(#[^"'\s])+/$1$2/g;
+   $content =~ s/(href=["'])\?.*(#[^"'\s])+/$1$2/g;
 
   # rewrite some urls to use file://..
   $content =~ s/(<link[^>]+href=["'])([^"']+)(["'])/$1.toFileUrl($2).$3/ge;
@@ -109,8 +109,7 @@ sub completePageHandler {
   writeDebug("htmlFile=" . $htmlFile->filename);
 
   # create prince command
-  my $session = $Foswiki::Plugins::SESSION;
-  my $pubUrl = $session->getPubUrl(1);    # SMELL: unofficial api
+  my $pubUrl = getPubUrl();
   my $princeCmd = $Foswiki::cfg{GenPDFPrincePlugin}{PrinceCmd}
     || '/usr/bin/prince --baseurl %BASEURL|U% -i html -o %OUTFILE|F% %INFILE|F% --log=%ERROR|F%';
 
@@ -203,4 +202,16 @@ sub modifyHeaderHandler {
   $hopts->{'Content-Disposition'} = "inline;filename=$baseTopic.pdf" if $doit;
 }
 
+###############################################################################
+sub getPubUrl {
+  my $session = $Foswiki::Plugins::SESSION;
+
+  if ($session->can("getPubUrl")) {
+    # pre 1.2
+    return $session->getPubUrl(1);
+  } 
+
+  # post 1.2
+  return Foswiki::Func::getPubUrlPath(absolute=>1);
+}
 1;

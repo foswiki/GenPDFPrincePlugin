@@ -1,4 +1,4 @@
-%META:TOPICINFO{author="ProjectContributor" comment="reprev" date="1289486358" format="1.1" reprev="3" version="3"}%
+%META:TOPICINFO{author="ProjectContributor" comment="" date="1418734112" format="1.1"  version="1"}%
 ---+!! %TOPIC%
 
 This plugin generates PDF using the third-party tool [[http://www.princexml.com/][Prince XML]]. 
@@ -58,6 +58,7 @@ Note, that !ZonePlugin is not required anymore in newer Foswiki engines > 1.1.0.
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | <!-- versions below in reverse order -->&nbsp; |
+|  16 Dec 2014 | work around call to unofficial internal api to get absolute pub urls |
 |  18 Mar 2014 | fixed encoding content again; \
                  setting =static= context when delivering pdf output |
 |  18 Mar 2013 | added outfile url param to specify the file name of the pdf being generated |
@@ -72,4 +73,4 @@ Note, that !ZonePlugin is not required anymore in newer Foswiki engines > 1.1.0.
 |  Support: | Foswiki:Support/%TOPIC% |
 
 
-%META:FILEATTACHMENT{name="watermark.jpeg" attachment="watermark.jpeg" attr="h" comment="" date="1289486214" size="19690" user="ProjectContributor" version="1"}%
+%META:FILEATTACHMENT{name="watermark.jpeg" attachment="watermark.jpeg" attr="h" comment="" date="1418734112" size="19690" user="ProjectContributor" version="1"}%
