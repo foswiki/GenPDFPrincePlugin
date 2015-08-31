@@ -1,6 +1,6 @@
 # Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# Copyright (C) 2009-2014 Michael Daum http://michaeldaumconsulting.com
+# Copyright (C) 2009-2015 Michael Daum http://michaeldaumconsulting.com
 #
 # This license applies to GenPDFPrincePlugin *and also to any derivatives*
 #
@@ -29,8 +29,8 @@ use File::Path ();
 use Encode ();
 use File::Temp ();
 
-our $VERSION = '1.60';
-our $RELEASE = '1.60';
+our $VERSION = '2.00';
+our $RELEASE = '31 Aug 2015';
 our $SHORTDESCRIPTION = 'Generate PDF using Prince XML';
 our $NO_PREFS_IN_TOPIC = 1;
 our $baseTopic;
@@ -79,14 +79,16 @@ sub completePageHandler {
 
 # unless ($siteCharSet =~ /utf\-8/i) {
    # convert to utf8
-   $content = Encode::decode($siteCharSet, $content);
+   $content = Encode::decode($siteCharSet, $content) unless $Foswiki::UNICODE;
    $content = Encode::encode_utf8($content);
 # }
 
-  # remove left-overs
+  # remove left-overs and some basic clean-up
   $content =~ s/([\t ]?)[ \t]*<\/?(nop|noautolink)\/?>/$1/gis;
   $content =~ s/<!--.*?-->//g;
   $content =~ s/[\0-\x08\x0B\x0C\x0E-\x1F\x7F]+/ /g;
+  $content =~ s/(<\/html>).*?$/$1/gs;
+  $content =~ s/^\s*$//gms;
 
   # clean url params in anchors as prince can't generate proper xrefs otherwise;
   # hope this gets fixed in prince at some time
@@ -182,16 +184,18 @@ sub toFileUrl {
   my $url = shift;
 
   my $fileUrl = $url;
+  my $localServerPattern = '^(?:'.$Foswiki::cfg{DefaultUrlHost}.')?'.$Foswiki::cfg{PubUrlPath}.'(.*)$';
+  $localServerPattern =~ s/https?/https?/;
 
-  if ($fileUrl =~ /^(?:$Foswiki::cfg{DefaultUrlHost})?$Foswiki::cfg{PubUrlPath}(.*)$/) {
+  if ($fileUrl =~ /$localServerPattern/) {
     $fileUrl = $1;
     $fileUrl =~ s/\?.*$//;
     $fileUrl = "file://".$Foswiki::cfg{PubDir}.$fileUrl;
   } else {
-    writeDebug("url=$url does not point to the local server");
+    #writeDebug("url=$url does not point to a local asset (pattern=$localServerPattern)");
   }
 
-  writeDebug("url=$url, fileUrl=$fileUrl");
+  #writeDebug("url=$url, fileUrl=$fileUrl");
   return $fileUrl;
 }
 
