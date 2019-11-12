@@ -1,4 +1,4 @@
-%META:TOPICINFO{author="ProjectContributor" comment="" date="1418734112" format="1.1"  version="1"}%
+%META:TOPICINFO{author="ProjectContributor" comment="" date="1573557190" format="1.1"  version="1"}%
 ---+!! %TOPIC%
 %FORMFIELD{"Description"}%
 
@@ -50,7 +50,8 @@ Note, that !ZonePlugin is not required anymore in newer Foswiki engines > 1.1.0.
 %$INSTALL_INSTRUCTIONS%
 
 ---++ Change History
-|  11 Jul 2016 | added option =pdfdisposition= to inlien or redirect content |
+|  12 Nov 2019 | don't append the html page to the end of the pdf output |
+|  11 Jul 2016 | added option =pdfdisposition= to inline or redirect content |
 |  31 Aug 2015 | compatibility for Foswiki-2.0 |
 |  16 Dec 2014 | work around call to unofficial internal api to get absolute pub urls |
 |  18 Mar 2014 | fixed encoding content again; \
@@ -65,10 +66,10 @@ Note, that !ZonePlugin is not required anymore in newer Foswiki engines > 1.1.0.
 |  07 May 2009 | initial release |
 
 
-%META:FILEATTACHMENT{name="watermark.jpeg" attachment="watermark.jpeg" attr="h" comment="" date="1418734112" size="19690" user="ProjectContributor" version="1"}%
+%META:FILEATTACHMENT{name="watermark.jpeg" attachment="watermark.jpeg" attr="h" comment="" date="1573557190" size="19690" user="ProjectContributor" version="1"}%
 %META:FORM{name="PackageForm"}%
 %META:FIELD{name="Author" title="Author" value="Foswiki:Main.MichaelDaum"}%
-%META:FIELD{name="Copyright" title="Copyright" value="&copy; 2009-2015, Michael Daum http://michaeldaumconsulting.com"}%
+%META:FIELD{name="Copyright" title="Copyright" value="&copy; 2009-2019, Michael Daum http://michaeldaumconsulting.com"}%
 %META:FIELD{name="Description" title="Description" value="%25$SHORTDESCRIPTION%25"}%
 %META:FIELD{name="Home" title="Home" value="Foswiki:Extensions/%TOPIC%"}%
 %META:FIELD{name="License" title="License" value="GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]])"}%

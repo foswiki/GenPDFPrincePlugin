@@ -1,6 +1,6 @@
 # Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# Copyright (C) 2009-2016 Michael Daum http://michaeldaumconsulting.com
+# Copyright (C) 2009-2019 Michael Daum http://michaeldaumconsulting.com
 #
 # This license applies to GenPDFPrincePlugin *and also to any derivatives*
 #
@@ -27,8 +27,8 @@ use File::Path ();
 use Encode ();
 use File::Temp ();
 
-our $VERSION = '2.10';
-our $RELEASE = '11 Jul 2016';
+our $VERSION = '2.20';
+our $RELEASE = '12 Nov 2019';
 our $SHORTDESCRIPTION = 'Generate PDF using Prince XML';
 our $NO_PREFS_IN_TOPIC = 1;
 our $baseTopic;
@@ -75,10 +75,6 @@ sub completePageHandler {
 
   my $content = $_[0];
 
-  # convert to utf8
-  $content = Encode::decode($siteCharSet, $content) unless $Foswiki::UNICODE;
-  $content = Encode::encode_utf8($content);
-
   # remove left-overs and some basic clean-up
   $content =~ s/([\t ]?)[ \t]*<\/?(nop|noautolink)\/?>/$1/gis;
   $content =~ s/<!--.*?-->//g;
@@ -100,6 +96,10 @@ sub completePageHandler {
 
   # create output filename
   my ($pdfFilePath, $pdfFile) = getFileName($baseWeb, $baseTopic);
+
+  # convert to utf8
+  $content = Encode::decode($siteCharSet, $content) unless $Foswiki::UNICODE;
+  $content = Encode::encode_utf8($content);
 
   # creater html file
   binmode($htmlFile);
@@ -158,6 +158,8 @@ sub completePageHandler {
     my $url = $Foswiki::cfg{PubUrlPath} . '/' . $baseWeb . '/' . $baseTopic . '/' . $pdfFile . '?t=' . time();
     Foswiki::Func::redirectCgiQuery($query, $url);
   }
+
+  $_[0] = ""; # don't send back anything else
 }
 
 ###############################################################################
