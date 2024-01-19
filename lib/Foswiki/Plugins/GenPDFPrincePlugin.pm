@@ -1,6 +1,6 @@
 # Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# Copyright (C) 2009-2019 Michael Daum http://michaeldaumconsulting.com
+# Copyright (C) 2009-2024 Michael Daum http://michaeldaumconsulting.com
 #
 # This license applies to GenPDFPrincePlugin *and also to any derivatives*
 #
@@ -17,6 +17,14 @@
 
 package Foswiki::Plugins::GenPDFPrincePlugin;
 
+=begin TML
+
+---+ package Foswiki::Plugins::GenPDFPrincePlugin
+
+base class to hook into the foswiki core
+
+=cut
+
 use strict;
 use warnings;
 
@@ -27,49 +35,59 @@ use File::Path ();
 use Encode ();
 use File::Temp ();
 
-our $VERSION = '2.20';
-our $RELEASE = '12 Nov 2019';
+our $VERSION = '3.00';
+our $RELEASE = '%$RELEASE%';
 our $SHORTDESCRIPTION = 'Generate PDF using Prince XML';
+our $LICENSECODE = '%$LICENSECODE%';
 our $NO_PREFS_IN_TOPIC = 1;
-our $baseTopic;
-our $baseWeb;
-our $doit = 0;
 
 use constant TRACE => 0; # toggle me
 
-###############################################################################
-sub writeDebug {
-  print STDERR "GenPDFPrincePlugin - $_[0]\n" if TRACE;
-}
+=begin TML
 
-###############################################################################
+---++ initPlugin($topic, $web, $user) -> $boolean
+
+initialize the plugin, automatically called during the core initialization process
+
+=cut
+
 sub initPlugin {
-  ($baseTopic, $baseWeb) = @_;
 
-  if ($Foswiki::Plugins::VERSION < 2.0) {
-    Foswiki::Func::writeWarning('Version mismatch between ',
-    __PACKAGE__, ' and Plugins.pm');
-    return 0;
-  }
-
-  my $query = Foswiki::Func::getCgiQuery();
+  my $query = Foswiki::Func::getRequestObject();
   my $contenttype = $query->param("contenttype") || 'text/html';
+  my $context = Foswiki::Func::getContext();
 
   if ($contenttype eq "application/pdf") {
-    $doit = 1;
-    Foswiki::Func::getContext()->{static} = 1;
+    $context->{genpdf_doit} = 1;
+    $context->{static} = 1;
+
+    my $template = Foswiki::Func::getPreferencesValue("PRINT_TEMPLATE");
+    Foswiki::Func::setPreferencesValue("VIEW_TEMPLATE", $template) if $template;
+
   } else {
-    $doit = 0;
+    $context->{genpdf_doit} = 0;
   }
 
   return 1;
 }
 
-###############################################################################
+=begin TML
+
+---++ ObjectMethod completePageHandler()
+
+some minor fixes to the html before generating pdf for it
+
+=cut
+
 sub completePageHandler {
   #my($html, $httpHeaders) = @_;
 
-  return unless $doit;
+  my $context = Foswiki::Func::getContext();
+  my $session = $Foswiki::Plugins::SESSION;
+  my $baseWeb = $session->{webName};
+  my $baseTopic = $session->{topicName};
+
+  return unless $context->{genpdf_doit};
 
   my $siteCharSet = $Foswiki::cfg{Site}{CharSet};
 
@@ -92,7 +110,6 @@ sub completePageHandler {
 
   # create temp files
   my $htmlFile = new File::Temp(SUFFIX => '.html', UNLINK => (TRACE ? 0 : 1));
-  my $errorFile = new File::Temp(SUFFIX => '.log', UNLINK => (TRACE ? 0 : 1));
 
   # create output filename
   my ($pdfFilePath, $pdfFile) = getFileName($baseWeb, $baseTopic);
@@ -104,43 +121,34 @@ sub completePageHandler {
   # creater html file
   binmode($htmlFile);
   print $htmlFile $content;
-  writeDebug("htmlFile=" . $htmlFile->filename);
+  _writeDebug("htmlFile=" . $htmlFile->filename);
 
   # create print command
   my $pubUrl = getPubUrl();
   my $cmd = $Foswiki::cfg{GenPDFPrincePlugin}{PrinceCmd}
-    || '/usr/bin/prince --baseurl %BASEURL|U% -i html -o %OUTFILE|F% %INFILE|F% --log=%ERROR|F%';
+    || '/usr/bin/prince --baseurl %BASEURL|U% -i html -o %OUTFILE|F% %INFILE|F%';
 
-  writeDebug("cmd=$cmd");
-  writeDebug("BASEURL=$pubUrl");
+  _writeDebug("cmd=$cmd");
+  _writeDebug("BASEURL=$pubUrl");
 
   # execute
-  my ($output, $exit) = Foswiki::Sandbox->sysCommand(
+  my ($output, $exit, $error) = Foswiki::Sandbox->sysCommand(
     $cmd,
     BASEURL => $pubUrl,
     OUTFILE => $pdfFilePath,
     INFILE => $htmlFile->filename,
-    ERROR => $errorFile->filename,
   );
 
-  local $/ = undef;
-
-  writeDebug("errorFile=" . $errorFile->filename);
-  writeDebug("htmlFile=" . $htmlFile->filename);
-
-  my $error = '';
-  if ($exit || TRACE) {
-    $error = <$errorFile>;
-  }
-
-  writeDebug("error=$error");
-  writeDebug("output=$output");
+  _writeDebug("htmlFile=" . $htmlFile->filename);
+  _writeDebug("error=$error");
+  #_writeDebug("output=$output");
 
   if ($exit) {
     my $html = $content;
     my $line = 1;
     $html = '00000: ' . $html;
     $html =~ s/\n/"\n".(sprintf "\%05d", $line++).": "/ge;
+    #print STDERR "$html\n" if TRACE;
     throw Error::Simple("execution of prince failed ($exit): \n\n$error\n\n$html");
   }
 
@@ -162,7 +170,14 @@ sub completePageHandler {
   $_[0] = ""; # don't send back anything else
 }
 
-###############################################################################
+=begin TML
+
+---++ ObjectMethod getFileName($web, $topic)
+
+returns the genpdf_...pdf file for the given web.topic
+
+=cut
+
 sub getFileName {
   my ($web, $topic) = @_;
 
@@ -182,7 +197,14 @@ sub getFileName {
   return ($filePath, $fileName);
 }
 
-###############################################################################
+=begin TML
+
+---++ ObjectMethod toFileUrl($url) -> $fileUrl
+
+converts a https:// url to a matching file:// url
+
+=cut
+
 sub toFileUrl {
   my $url = shift;
 
@@ -195,21 +217,40 @@ sub toFileUrl {
     $fileUrl =~ s/\?.*$//;
     $fileUrl = "file://".$Foswiki::cfg{PubDir}.$fileUrl;
   } else {
-    #writeDebug("url=$url does not point to a local asset (pattern=$localServerPattern)");
+    #_writeDebug("url=$url does not point to a local asset (pattern=$localServerPattern)");
   }
 
-  #writeDebug("url=$url, fileUrl=$fileUrl");
+  #_writeDebug("url=$url, fileUrl=$fileUrl");
   return $fileUrl;
 }
 
-###############################################################################
+=begin TML
+
+---++ ObjectMethod modifyHeaderHandler($request)
+
+adds content-disposition headers during pdf generation
+
+=cut
+
 sub modifyHeaderHandler {
   my ($hopts, $request) = @_;
 
-  $hopts->{'Content-Disposition'} = "inline;filename=$baseTopic.pdf" if $doit;
+  my $session = $Foswiki::Plugins::SESSION;
+  my $baseWeb = $session->{webName};
+  my $baseTopic = $session->{topicName};
+  my $context = Foswiki::Func::getContext();
+
+  $hopts->{'Content-Disposition'} = "inline;filename=$baseTopic.pdf" if $context->{genpdf_doit};
 }
 
-###############################################################################
+=begin TML
+
+---++ ObjectMethod getPubUrl()
+
+compatibility layer
+
+=cut
+
 sub getPubUrl {
   my $session = $Foswiki::Plugins::SESSION;
 
@@ -222,7 +263,14 @@ sub getPubUrl {
   return Foswiki::Func::getPubUrlPath(undef, undef, undef, absolute=>1);
 }
 
-###############################################################################
+=begin TML
+
+---++ ObjectMethod readFile($name)
+
+reads a pdf file from disk if delivering it inline instead of redirecting the browser to it
+
+=cut
+
 sub readFile {
   my $name = shift;
   my $data = '';
@@ -238,5 +286,11 @@ sub readFile {
   $data = '' unless $data;    # no undefined
   return $data;
 }
+
+# static helper
+sub _writeDebug {
+  print STDERR "GenPDFPrincePlugin - $_[0]\n" if TRACE;
+}
+
 
 1;
